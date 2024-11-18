@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éditeur en temps réel avec TinyMCE et Chat</title>
+    <link rel="stylesheet" href="../static/style.css">
+
+    <!-- Inclure le CSS de TinyMCE -->
+    <script src="https://cdn.tiny.cloud/1/0gh4xjipp36koe312o5peus4kjm79ce6sh4vtdhsxpzf566y/tinymce/5/tinymce.min.js"></script>
+
+    <!-- Inclure Font Awesome pour les icônes -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body{
+            background-color: #201e1e;
+        }
+        #editor-container {
+            width: 794px;
+            height: 1123px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            position: relative;
+        }
+
+        #screenshot-btn {
+            justify-content: center;
+            width: 300px;
+            color: white;
+            background-color: #1b7e12;
+            border: none;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px; /* Coins arrondis */
+            transition: background-color 0.3s;
+        }
+
+        .navbar {
+            position: sticky;
+            top: 0;
+            background-color: #333;
+            align-items: center; 
+            padding: 10px 20px;
+            z-index: 1000; 
+            display: flex; 
+            justify-content: space-between;
+
+        }
+
+        .navbar button {
+            justify-content: center;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px; 
+            transition: background-color 0.3s;
+        }
+        .navbar button:hover {
+            background-color: #777; 
+        }
+        
+        .navbar p {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .btn-docs {
+            background-color: #4CAF50; 
+        }
+        .btn-docs:hover {
+            background-color: #45a049; 
+        }
+        .btn-chat {
+            background-color: #2196F3; 
+        }
+        .btn-chat:hover {
+            background-color: #1976D2; 
+        }
+        .btn-files {
+            background-color: #f44336; 
+        }
+        .btn-files:hover {
+            background-color: #d32f2f; 
+        }
+
+        .btn-logout {
+            background-color: #eb12ff;
+            padding: 4px 8px; 
+            font-size: 14px; 
+            border-radius: 3px;
+            margin-left: auto; 
+        }
+        .btn-logout:hover {
+            background-color: #940794; 
+        }
+        
+
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1 style="text-align: center;">
+            <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">CR Writer</a>
+        </h1>
+        
+        <form action="{{ url_for('docs') }}" method="post">
+            <button class="btn-docs" type="submit">Document</button>
+        </form>
+        <form action="{{ url_for('chat') }}" method="post">
+            <button class="btn-chat" type="submit">Chat</button>
+        </form>
+        <form action="{{ url_for('files') }}" method="post">
+            <button class="btn-files" type="submit">Fichiers</button>
+        </form>
+        <h1 style="text-align: center;">
+            <a href="{{ url_for('logout') }}" style="text-decoration: none; width: 11em; font-size: 18px; color: #ff5733; font-weight: bold;">
+                Déconnexion
+            </a>
+        </h1>
+
+        
+    </div>
+
+    
+    
+    <p style="color:rgb(255, 255, 255);">User : {{session['username']}}</p>
+    <p style="color:rgb(255, 255, 255);">Groupe : {{session['groupe']}}</p>
+
+    <!-- Bouton pour capturer l'écran -->
+    <button id="screenshot-btn">Capture d'écran</button>
+
+    
+
+    <!-- Conteneur pour TinyMCE -->
+    <div id="editor-container">
+        <textarea id="editor"></textarea>
+    </div>
+
+    
+
+    <!-- Inclure le JS de Socket.IO -->
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+
+    <script>
+        const socket = io();
+    
+
+        // Initialisation de TinyMCE
+        tinymce.init({
+            width: '100%',   // L'éditeur occupe toute la largeur disponible
+            height: 1000,
+            selector: '#editor',
+            plugins: 'image',
+            toolbar: 'undo redo | formatselect | bold italic | image',
+            setup: function(editor) {
+                editor.on('Change', function() {
+                    const content = editor.getContent();
+                    const cursorPosition = editor.selection.getRng().getBoundingClientRect();
+                    socket.emit('text_change', { content, cursorPosition });
+                    
+                });
+            }
+        });
+
+        // Synchronise le contenu initial
+        socket.emit('request_initial_content');
+
+        // Reçoit les modifications des autres utilisateurs
+        socket.on('update_text', function(data) {
+            const { content, cursorPosition } = data;
+            tinymce.get('editor').setContent(content);
+            if (cursorPosition) {
+                tinymce.get('editor').selection.moveTo(cursorPosition);
+            }
+        });
+
+        // Fonction pour la capture d'écran avec l'API Screen Capture (getDisplayMedia)
+        async function captureScreen() {
+            try {
+                const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+
+                video.onloadedmetadata = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const screenshot = canvas.toDataURL('image/png');
+                    stream.getTracks().forEach(track => track.stop());
+                    const editor = tinymce.get('editor');
+                    editor.insertContent(`<img src="${screenshot}" width="500" />`);
+                };
+            } catch (err) {
+                console.error('Erreur lors de la capture de l\'écran:', err);
+            }
+        }
+
+        // Lier le bouton de capture à la fonction
+        document.getElementById('screenshot-btn').addEventListener('click', captureScreen);
+ 
+
+    
+    </script>
+</body>
+</html>

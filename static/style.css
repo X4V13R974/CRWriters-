@@ -1,0 +1,197 @@
+/* Styles généraux */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #007bff;
+}
+
+form {
+    max-width: 400px;
+    margin: 5px auto;
+    background: #fff;
+    padding: 5px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+input[type="text"], input[type="password"], textarea {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    border: none;
+
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+/* Messages flash */
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+li.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+li.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+}
+
+/* Conteneur de l'éditeur */
+#editor-container {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Chat styles */
+#chat-container {
+    width: 300px;
+    height: 400px;
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    display: none;
+}
+
+#chat-header {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    font-weight: bold;
+    text-align: center;
+}
+
+#chat-messages {
+    height: 300px;
+    overflow-y: auto;
+    padding: 10px;
+    background-color: #f4f4f9;
+}
+
+#chat-input {
+    width: calc(100% - 20px);
+    padding: 10px;
+    border: none;
+    border-top: 1px solid #ddd;
+}
+
+/* Bouton de capture d'écran */
+#screenshot-btn {
+    display: block;
+    margin: 10px auto;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#screenshot-btn:hover {
+    background-color: #218838;
+}
+
+/* Icône du chat */
+#chat-dropdown {
+    position: fixed;
+    bottom: 20px;
+    right: 340px;
+    font-size: 32px;
+    cursor: pointer;
+    color: #007bff;
+}
+
+#chat-dropdown:hover {
+    color: #0056b3;
+}
+
+/* Responsiveness */
+@media (max-width: 768px) {
+    form, #editor-container {
+        width: 90%;
+    }
+
+    #chat-container {
+        width: 90%;
+        bottom: 10px;
+        right: 10px;
+    }
+
+    #chat-dropdown {
+        right: 100px;
+    }
+}
+
+.delete-btn {
+    background-color: red;
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin-left: 10px;
+}
+.delete-btn:hover {
+    background-color: darkred;
+}
+
+
+
+/* Styles pour chaque "page" */
+.page {
+    width: 794px; /* Largeur d'une page A4 en pixels à 96 DPI */
+    height: 1123px; /* Hauteur d'une page A4 en pixels à 96 DPI */
+    margin: 20px 0;
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    padding: 40px; /* Marges internes */
+    overflow: hidden;
+    box-sizing: border-box;
+    position: relative;
+}

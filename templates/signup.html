@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+    <h2>Inscription</h2>
+    <form action="{{ url_for('signup') }}" method="post">
+        <label for="username">Nom d'utilisateur :</label>
+        <input type="text" id="username" name="username" required>
+        
+        <label for="password">Mot de passe :</label>
+        <input type="password" id="password" name="password" required>
+        
+        <button type="submit">S'inscrire</button>
+    </form>
+    <p>Déjà inscrit ? <a href="{{ url_for('login') }}">Se connecter</a></p>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+                {% for category, message in messages %}
+                    <li class="{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+</body>
+</html>

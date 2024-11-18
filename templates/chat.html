@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <link rel="stylesheet" href="/static/chat.css">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <style>
+        /*body {
+            background-color: #201e1e;
+
+        }*/
+        
+        form {
+            max-width: 400px;
+            margin: 5px auto;
+            background: #fff;
+            padding: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            background-color: #333;
+            align-items: center; 
+            padding: 10px 20px;
+            z-index: 1000; 
+            display: flex; 
+
+        }
+
+        .navbar button {
+            justify-content: center;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px; 
+            transition: background-color 0.3s;
+        }
+        .navbar button:hover {
+            background-color: #777; 
+        }
+        
+        .navbar p {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .btn-docs {
+            background-color: #4CAF50; 
+        }
+        .btn-docs:hover {
+            background-color: #45a049; 
+        }
+        .btn-chat {
+            background-color: #2196F3; 
+        }
+        .btn-chat:hover {
+            background-color: #1976D2; 
+        }
+        .btn-files {
+            background-color: #f44336; 
+        }
+        .btn-files:hover {
+            background-color: #d32f2f; 
+        }
+
+    </style>
+</head>
+<body>
+    <div class="navbar">
+        <h1 style="text-align: center;">
+            <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">CR Writer</a>
+        </h1>
+        
+        <form action="{{ url_for('docs') }}" method="post">
+            <button class="btn-docs" type="submit">Document</button>
+        </form>
+        <form action="{{ url_for('chat') }}" method="post">
+            <button class="btn-chat" type="submit">Chat</button>
+        </form>
+        <form action="{{ url_for('files') }}" method="post">
+            <button class="btn-files" type="submit">Fichiers</button>
+        </form>
+        <h1 style="text-align: center;">
+            <a href="{{ url_for('logout') }}" style="text-decoration: none; width: 11em; font-size: 18px; color: #ff5733; font-weight: bold;">
+                Déconnexion
+            </a>
+        </h1>
+
+        
+    </div><br><br>
+
+
+    <div class="chat-container">
+        <!-- affiche le noms de groupe et d'utilisateur -->
+        <div class="info-panel">
+            <p>Groupe : <span id="group-name">{{ group_id }}</span></p>
+            <p>Utilisateur : <span id="user-name">{{ user }}</span></p>
+        </div>
+
+        <!-- Zone pour les messages -->
+        <div id="messages" class="messages"></div>
+
+        <!-- Zone pour l'envoi de messages -->
+        <div class="input-container">
+            <input id="message" type="text" placeholder="Écrire...">
+            <button id="send-btn">Envoyer</button>
+        </div>
+
+
+
+        <script>
+            const socket = io();
+            const user = "{{ session['username'] }}";
+            const group_id = "{{ session['groupe'] }}";
+
+            // Fonction qui met à jour l'utilisateur connecté
+            function updateOnlineCount(count) {
+                const info = document.getElementById('online-count');
+                info.textContent = `Connectés : ${count}`;
+            }
+
+            // Rejoindre un groupe
+            socket.emit('chat', { user: user, group_id: group_id });
+
+            // Permet d'envoyer un message
+            document.getElementById('send-btn').addEventListener('click', function () {
+                const message = document.getElementById('message').value;
+                if (message) {
+                    socket.emit('message', { user: user, group_id: group_id, message: message });
+                    document.getElementById('message').value = '';
+                }
+            });
+
+            // Permet de recevoir un message
+            socket.on('message', (data) => {
+                const messageContainer = document.getElementById('messages');
+                const newMessage = document.createElement('div');
+                
+                if (data.user === user) {
+                    newMessage.classList.add('my-message');
+                } else {
+                    newMessage.classList.add('other-message');
+                }
+                
+                newMessage.innerHTML = `<strong>${data.user}:</strong> ${data.message}`;
+                messageContainer.appendChild(newMessage);
+                messageContainer.scrollTop = messageContainer.scrollHeight;
+            });
+
+            // Met à jour le compteur d'utilisateurs connectés
+            socket.on('user-connected', function (data) {
+                updateOnlineCount(data.count);
+            });
+
+            // Met à jour dle compteur quand quelqu'un se déconnecte
+            socket.on('user-disconnected', function (data) {
+                updateOnlineCount(data.count);
+            });
+
+            // Gestion de la déconnexion
+            document.getElementById('logout-btn').addEventListener('click', function () {
+                socket.emit('disconnect', { user: user, group_id: group_id });
+                window.location.href = '/';
+            });
+
+            // Détecte si la page/onglet est fermé et informe le serveur
+            window.addEventListener('beforeunload', function () {
+                socket.emit('disconnect', { user: user, group_id: group_id });
+            });
+        </script>
+    </div>
+</body>
+</html>

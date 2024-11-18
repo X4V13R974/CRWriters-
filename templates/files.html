@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Partage de fichiers</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+    <style>
+        
+
+
+
+        input[type="file"],input[type="dwld"]   {
+            padding: 10px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            width: 80%;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        
+        #drop-area {
+            width: 60%;
+            height: 200px;
+            border: 2px dashed #4CAF50;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            text-align: center;
+            color: #4CAF50;
+            font-size: 18px;
+        }
+
+        #drop-area.hover {
+            background-color: #e0f7e0;
+        }
+
+        
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        li {
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #bcffcd;
+            border: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        li a {
+            color: #007BFF;
+            text-decoration: none;
+        }
+
+        li button {
+            background-color: #f44336;
+            color: rgb(188, 248, 181);
+        }
+
+        li button:hover {
+            background-color: #e53935;
+        }
+        body {
+            background-color: #201e1e;
+
+        }
+        
+        form {
+            max-width: 400px;
+            margin: 5px auto;
+            background: #fff;
+            padding: 5px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .navbar {
+            position: sticky;
+            top: 0;
+            background-color: #333;
+            align-items: center;
+            padding: 10px 20px;
+            z-index: 1000;
+            display: flex; 
+
+        }
+
+        .navbar button {
+            justify-content: center;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .navbar button:hover {
+            background-color: #777; 
+        }
+        
+        .navbar p {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .btn-docs {
+            background-color: #4CAF50; 
+        }
+        .btn-docs:hover {
+            background-color: #45a049; 
+        }
+        .btn-chat {
+            background-color: #2196F3; 
+        }
+        .btn-chat:hover {
+            background-color: #1976D2; 
+        }
+        .btn-files {
+            background-color: #f44336; 
+        }
+        .btn-files:hover {
+            background-color: #d32f2f;
+        }
+        
+    </style>
+</head>
+<body>
+   
+   <!-- Barre de navivagation -->
+    <div class="navbar">
+        <h1 style="text-align: center;">
+            <a href="{{ url_for('index') }}" style="text-decoration: none; color: inherit;">CR Writer</a>
+        </h1>
+        <form action="{{ url_for('docs') }}" method="post">   
+            <button class="btn-docs" type="submit">Document</button>
+        </form>
+        <form action="{{ url_for('chat') }}" method="post">
+            <button class="btn-chat" type="submit">Chat</button>
+        </form>
+        <form action="{{ url_for('files') }}" method="post">
+            <button class="btn-files" type="submit">Fichiers</button>
+        </form>
+        <h1 style="text-align: center;">
+            <a href="{{ url_for('logout') }}" style="text-decoration: none; width: 11em; font-size: 18px; color: #ff5733; font-weight: bold;">
+                Déconnexion
+            </a>
+        </h1>
+
+        
+    </div>
+
+
+    <h1>Partage de fichiers</h1>
+
+    <!-- Créer un formulaire pour télécharger un fichier  -->
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <p name="user">Votre nom : {{session['username']}}</p>
+        <input type="file" name="file" required>
+        <button name= "dwld" type="submit"> Téléversé</button>
+    </form>
+
+    <!-- Zone du Drag and Drop avec un css en haut -->
+    <div id="drop-area">
+        <p>Glissez vos fichiers ici</p>
+    </div>
+<!-- Cree la zone fichier et affiche les fichier qu'on peut supprimer ou telecharger  -->
+    <h2>Fichiers disponibles</h2>
+    <ul id="file-list">
+        {% for file in files %}
+            <li id="file-{{ file[0] }}">    <!-- Les fichier sont affiché scomme des elements de liste-->
+                {{ file[1] }} - Téléchargé par {{ file[2] }}
+                <a href="/uploads/{{ file[1] }}" download>Télécharger</a>
+                <form action="/delete/{{ file[0] }}" method="post" style="display:inline;">
+                    <input type="hidden" name="user" value="{{ file[2] }}">
+                    <button type="submit">Supprimer</button>
+                </form>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <script>
+        var socket = io();
+//Quand un fichier est téléversé,l'application afficher le fichier, avec son nom
+        socket.on('new_file', function(data) {
+            var list = document.getElementById('file-list');//récupérer un élément à partir de son ID.
+            var item = document.createElement('li');// cree un nouveau element
+            item.id = 'file-' + data.file_id;
+            item.innerHTML = data.filename + " - Téléchargé par " + data.user + // recupere le nom utilisateur dans la base de donnée
+                ' <a href="/uploads/' + data.filename + '" download>Télécharger</a>';
+            list.appendChild(item); // ajout le nouveau fichier a la liste de fichiers
+        });
+
+// Cette fonction permet de supprimer en temps reel sans recharger la page
+        socket.on('delete_file', function(data) {
+            var item = document.getElementById('file-' + data.file_id);
+            if (item) {
+                item.remove();
+            }
+        });
+
+        // Fonction du drag and drop trouver sur internet voir rapport
+        var dropArea = document.getElementById('drop-area');
+        
+        dropArea.addEventListener('dragover', function(event) {
+            event.preventDefault();
+            dropArea.classList.add('hover');
+        });
+
+        dropArea.addEventListener('dragleave', function() {
+            dropArea.classList.remove('hover');
+        });
+
+        dropArea.addEventListener('drop', function(event) {
+            event.preventDefault();
+            dropArea.classList.remove('hover');
+            var files = event.dataTransfer.files;
+            var formData = new FormData();
+            formData.append('file', files[0]);
+            formData.append('user', document.querySelector('[name="user"]').value);
+
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/upload', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    location.reload();
+                } else {
+                    alert('Échec du téléchargement.');
+                }
+            };
+            xhr.send(formData);
+        });
+    </script>
+</body>
+</html>
